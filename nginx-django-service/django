@@ -1,0 +1,111 @@
+#!/bin/sh
+# $Id: rc.redhat.Django_FCGI 226811 2009-11-02 17:14:20Z tilghman $
+#
+# django_fcgid     Starts, Stops and Reloads Django_FCGI.
+#
+# chkconfig: 2345 92 64
+# description: django_fcgi daemon start-stop script 
+# processname: django_fcgi
+# pidfile: /opt/pure_ftpd_webui_forum/run/forum.pid
+#
+# We Sep 22 2010 
+# Version 1.0
+ 
+# Installation directory
+DAEMON_DIR=Django project path
+ 
+# Source function library.
+. /etc/rc.d/init.d/functions
+ 
+# Source networking configuration.
+. /etc/sysconfig/network
+ 
+# Check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 0
+ 
+if ! [ -x $DAEMON_DIR/manage.pyc ] ; then
+        echo "ERROR: $DAEMON_DIR/manage.pyc not found"
+        exit 0
+fi
+ 
+ 
+ 
+# Full path to daemon
+PYTHON=/usr/bin/python
+PROG=manage.pyc
+DAEMON=$DAEMON_DIR/$PROG
+PIDFILE=$DAEMON_DIR/django.pid
+LOCKFILE=$DAEMON_DIR/django.lock
+# SOCKET=$DAEMON_DIR/django.sock
+ 
+DAEMONARGS="runfcgi method=threaded host=127.0.0.1 port=9999 pidfile=$PIDFILE &> /dev/null"
+ 
+ 
+# Allow configuration overrides in /etc/sysconfig/django_fcgi
+CONFIG0=`readlink $0`
+if [ "$CONFIG0" = "" ]; then
+        CONFIGFILE=/etc/sysconfig/`basename $0`
+else
+        CONFIGFILE=/etc/sysconfig/`basename $CONFIG0`
+fi
+[ -x $CONFIGFILE ] && . $CONFIGFILE
+ 
+RETVAL=0
+ 
+start() {
+ 
+        if status $PROG > /dev/null; then
+                status $PROG
+                exit 1
+        fi
+ 
+        # Start daemons.
+        echo -n $"Starting django_fcgi: "
+        daemon $PYTHON $DAEMON $DAEMONARGS 
+ 
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && touch $LOCKFILE
+        echo
+        return $RETVAL
+}
+ 
+stop() {
+        # Stop daemons.
+        echo -n $"Shutting down django_fcgi: "
+        PID=$(cat $PIDFILE)
+        kill -9 $PID
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && rm -f $LOCKFILE
+        echo
+        return $RETVAL
+}
+ 
+restart() {
+        stop
+        start
+}
+ 
+ 
+# See how we were called.
+case "$1" in
+  start)
+        start
+        ;;
+  stop)
+        stop
+        ;;
+  restart)
+        restart
+        ;;
+  condrestart)
+        [ -f $LOCKFILE ] && restart || :
+        ;;
+  status)
+        status django_fcgi
+        ;;
+  *)
+        echo "Usage: django_fcgi {start|stop|restart|reload|condrestart|status}"
+        exit 1
+esac
+ 
+exit $?

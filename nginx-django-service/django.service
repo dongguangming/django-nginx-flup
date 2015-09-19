@@ -1,0 +1,15 @@
+[Unit]
+Description=Django is a high-level Python Web framework
+Documentation=https://docs.djangoproject.com/en
+After=nginx.target
+ 
+[Service]
+Type=forking
+PIDFile=django project path/django.pid
+ExecStart=/usr/bin/sh /etc/init.d/django.sh start
+ExecReload=/usr/bin/sh /etc/init.d/django.sh restart
+ExecStop=/usr/bin/sh /etc/init.d/django.sh stop
+PrivateTmp=true
+ 
+[Install]
+WantedBy=multi-user.target
